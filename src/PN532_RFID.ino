@@ -5,9 +5,13 @@ SYSTEM_THREAD(ENABLED);
 
 // // EPD includes
 #include <SPI.h>
-#include "../lib/E_Paper/src/EPD_3in52.h"
-#include "../lib/E_Paper/src/imagedata.h"
-#include "../lib/E_Paper/src/epdpaint.h"
+// #include "../lib/E_Paper/src/EPD_3in52.h"
+// #include "../lib/E_Paper/src/imagedata.h"
+// #include "../lib/E_Paper/src/epdpaint.h"
+
+#include "../lib/EPD4_2/src/epd4in2b_V2.h"
+#include "../lib/EPD4_2/src/imagedata.h"
+#include "../lib/EPD4_2/src/epdpaint.h"
 
 // RFID includes
 #include "../lib/PN532/src/DFRobot_PN532.h"
@@ -22,8 +26,8 @@ Epd epd;
 #define COLORED     0
 #define UNCOLORED   1
 
-UBYTE image[11000];
-UBYTE image2[11000];
+//UBYTE image[11000];
+//UBYTE image2[11000];
 
 String VAR1;
 String VAR2;
@@ -78,6 +82,8 @@ delay(5000);
 //gauge.reset();                                  // Resets MAX1720x
 //delay(2000);                                      // Waits for the initial measurements to be made
 
+// TEST PANEL 3.52" --- START
+
 Serial.println();
 Serial.print("Initializing e-Paper display");
 if (epd.Init() != 0) { 
@@ -85,19 +91,21 @@ if (epd.Init() != 0) {
   return;
   }
 
-// Serial.println();
-// Serial.print("Initializing PN532");
-// while (!nfc.begin()) {
-//   Serial.print(".");
-//   delay (1000);
-// }
+// TEST PANEL 3.52" --- END
+
+Serial.println();
+Serial.print("Initializing PN532");
+while (!nfc.begin()) {
+  Serial.print(".");
+  delay (1000);
+}
 
 //EPD();
 
  Serial.println();
  Serial.println("Waiting for a card......");  
 
-//I2C_Scanner();
+I2C_Scanner();
 
 }
 
@@ -207,108 +215,105 @@ void Fuel_Gauge() {
     Serial.print(msgFG);
 }
 
-
-
-
 void EPD() {
 
-  Serial.println("Constructing message for display...");
+  // Serial.println("Constructing message for display...");
 
-  VAR1 = "Office Room";
-  VAR2 = "Movie Night";
-  VAR3 = "20:00";
-  VAR4 = "22:00";
-  VAR5 = "Tom &";
-  VAR6 = "Cruise";
-  SCAN = "D-Day ";
+  // VAR1 = "Office Room";
+  // VAR2 = "Movie Night";
+  // VAR3 = "20:00";
+  // VAR4 = "22:00";
+  // VAR5 = "Tom &";
+  // VAR6 = "Cruise";
+  // SCAN = "D-Day ";
   
-  epd.display_NUM(EPD_3IN52_WHITE);
-  epd.lut_GC();
-  epd.Clear();
-  epd.refresh();
+  // epd.display_NUM(EPD_3IN52_WHITE);
+  // epd.lut_GC();
+  // epd.Clear();
+  // epd.refresh();
 
-  delay(500);
+  // delay(500);
 
-  epd.SendCommand(0x50);
-  epd.SendData(0x17);
+  // epd.SendCommand(0x50);
+  // epd.SendData(0x17);
 
-  Paint paint(image, 240, 360);     // width should be the multiple of 8   
-  paint.SetRotate(3);               // Top right (0,0)
-  paint.Clear(UNCOLORED);
+  // Paint paint(image, 240, 360);     // width should be the multiple of 8   
+  // paint.SetRotate(3);               // Top right (0,0)
+  // paint.Clear(UNCOLORED);
 
-  paint.DrawStringAt(5, 5, "ROOM: ", &Font20, COLORED);
-  paint.DrawStringAt(100, 5, String(VAR1), &Font24, COLORED);
+  // paint.DrawStringAt(5, 5, "ROOM: ", &Font20, COLORED);
+  // paint.DrawStringAt(100, 5, String(VAR1), &Font24, COLORED);
 
-  paint.DrawStringAt(5, 35, "TITLE: ", &Font20, COLORED);
-  paint.DrawStringAt(100, 35, String(VAR2), &Font24, COLORED);
+  // paint.DrawStringAt(5, 35, "TITLE: ", &Font20, COLORED);
+  // paint.DrawStringAt(100, 35, String(VAR2), &Font24, COLORED);
 
-  paint.DrawStringAt(5, 65, "TIME: ", &Font20, COLORED);
-  paint.DrawStringAt(100, 65, String(VAR3) + " - " + String(VAR4), &Font24, COLORED);
+  // paint.DrawStringAt(5, 65, "TIME: ", &Font20, COLORED);
+  // paint.DrawStringAt(100, 65, String(VAR3) + " - " + String(VAR4), &Font24, COLORED);
 
-  paint.DrawHorizontalLine(0,136,360,COLORED);
-  paint.DrawVerticalLine(180,136,104,COLORED);
+  // paint.DrawHorizontalLine(0,136,360,COLORED);
+  // paint.DrawVerticalLine(180,136,104,COLORED);
     
-  paint.DrawFilledRectangle(0,145,170,240, COLORED);
-  paint.DrawStringAt(5, 155, "SPEAKER: ", &Font20, UNCOLORED);
-  paint.DrawStringAt(5, 185, (VAR5), &Font24, UNCOLORED);
-  paint.DrawStringAt(5, 215, (VAR6), &Font24, UNCOLORED);
+  // paint.DrawFilledRectangle(0,145,170,240, COLORED);
+  // paint.DrawStringAt(5, 155, "SPEAKER: ", &Font20, UNCOLORED);
+  // paint.DrawStringAt(5, 185, (VAR5), &Font24, UNCOLORED);
+  // paint.DrawStringAt(5, 215, (VAR6), &Font24, UNCOLORED);
 
-  paint.DrawFilledRectangle(190,145,360,240, COLORED);   
-  paint.DrawStringAt(200, 180, String(SCAN), &Font24, UNCOLORED);                 //This should be printed from the scan function 
+  // paint.DrawFilledRectangle(190,145,360,240, COLORED);   
+  // paint.DrawStringAt(200, 180, String(SCAN), &Font24, UNCOLORED);                 //This should be printed from the scan function 
 
-  epd.display_part(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());  // (Y, X)
-  epd.refresh();
-  delay(25);
-  epd.sleep();
+  // epd.display_part(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());  // (Y, X)
+  // epd.refresh();
+  // delay(25);
+  // epd.sleep();
 
   
   /////////////// e-Paper 4.2" Raw Panel ------------->
 
-  // Serial.print("4.2inch e-paper test\r\n ");
+  Serial.print("4.2inch e-paper test\r\n ");
 
   // //   /* This clears the SRAM of the e-paper display */
-  //  epd.ClearFrame();
+   epd.ClearFrame();
 
-  //  unsigned char image[1500];
-  //  Paint paint(image, 400, 28);    //width should be the multiple of 8 
+   unsigned char image[1500];
+   Paint paint(image, 400, 28);    //width should be the multiple of 8 
 
-  //  paint.Clear(UNCOLORED);
-  //  paint.DrawStringAt(0, 0, "e-Paper Demo", &Font24, COLORED);
-  //  epd.SetPartialWindowBlack(paint.GetImage(), 100, 40, paint.GetWidth(), paint.GetHeight());
+   paint.Clear(UNCOLORED);
+   paint.DrawStringAt(0, 0, "e-Paper Demo", &Font24, COLORED);
+   epd.SetPartialWindowBlack(paint.GetImage(), 100, 40, paint.GetWidth(), paint.GetHeight());
 
-  //  paint.Clear(COLORED);
-  //  paint.DrawStringAt(100, 2, "Hello world", &Font24, UNCOLORED);
-  //  epd.SetPartialWindowRed(paint.GetImage(), 0, 64, paint.GetWidth(), paint.GetHeight());
+   paint.Clear(COLORED);
+   paint.DrawStringAt(100, 2, "Hello world", &Font24, UNCOLORED);
+   epd.SetPartialWindowRed(paint.GetImage(), 0, 64, paint.GetWidth(), paint.GetHeight());
   
-  //  paint.SetWidth(64);
-  //  paint.SetHeight(64);
+   paint.SetWidth(64);
+   paint.SetHeight(64);
 
-  //  paint.Clear(UNCOLORED);
-  //  paint.DrawRectangle(0, 0, 40, 50, COLORED);
-  //  paint.DrawLine(0, 0, 40, 50, COLORED);
-  //  paint.DrawLine(40, 0, 0, 50, COLORED);
-  //  epd.SetPartialWindowBlack(paint.GetImage(), 72, 120, paint.GetWidth(), paint.GetHeight());
+   paint.Clear(UNCOLORED);
+   paint.DrawRectangle(0, 0, 40, 50, COLORED);
+   paint.DrawLine(0, 0, 40, 50, COLORED);
+   paint.DrawLine(40, 0, 0, 50, COLORED);
+   epd.SetPartialWindowBlack(paint.GetImage(), 72, 120, paint.GetWidth(), paint.GetHeight());
   
-  //  paint.Clear(UNCOLORED);
-  //  paint.DrawCircle(32, 32, 30, COLORED);
-  //  epd.SetPartialWindowBlack(paint.GetImage(), 200, 120, paint.GetWidth(), paint.GetHeight());
+   paint.Clear(UNCOLORED);
+   paint.DrawCircle(32, 32, 30, COLORED);
+   epd.SetPartialWindowBlack(paint.GetImage(), 200, 120, paint.GetWidth(), paint.GetHeight());
 
-  //  paint.Clear(UNCOLORED);
-  //  paint.DrawFilledRectangle(0, 0, 40, 50, COLORED);
-  //  epd.SetPartialWindowRed(paint.GetImage(), 72, 200, paint.GetWidth(), paint.GetHeight());
+   paint.Clear(UNCOLORED);
+   paint.DrawFilledRectangle(0, 0, 40, 50, COLORED);
+   epd.SetPartialWindowRed(paint.GetImage(), 72, 200, paint.GetWidth(), paint.GetHeight());
 
-  //  paint.Clear(UNCOLORED);
-  //  paint.DrawFilledCircle(32, 32, 30, COLORED);
-  //  epd.SetPartialWindowRed(paint.GetImage(), 200, 200, paint.GetWidth(), paint.GetHeight());
+   paint.Clear(UNCOLORED);
+   paint.DrawFilledCircle(32, 32, 30, COLORED);
+   epd.SetPartialWindowRed(paint.GetImage(), 200, 200, paint.GetWidth(), paint.GetHeight());
 
-  // // /* This displays the data from the SRAM in e-Paper module */
-  //  epd.DisplayFrame();
+  // /* This displays the data from the SRAM in e-Paper module */
+   epd.DisplayFrame();
 
-  // /* This displays an image */
-  // epd.DisplayFrame(IMAGE_BLACK, IMAGE_RED);
+  /* This displays an image */
+  epd.DisplayFrame(IMAGE_BLACK, IMAGE_RED);
 
-  // /* Deep sleep */
-  // epd.Sleep();
+  /* Deep sleep */
+  //epd.Sleep();
 
   /////////////// e-Paper 4.2" Raw Panel -------------<
 
