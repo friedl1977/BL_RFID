@@ -65,3 +65,8 @@ int EpdIf::IfInit(void) {
     return 0;
 }
 
+void EpdIf::SpiEnd(void)
+{
+    SPI.end();
+}
+

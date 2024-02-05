@@ -32,7 +32,7 @@ double max1720x::getVoltage()
     return voltage*0.078125; // //calculate actual value and return in mV
 }
 
-// Returns RAW Coulomb_QH count of the connected LiIon Polymer battery
+//Returns RAW Coulomb_QH count of the connected LiIon Polymer battery
 double max1720x::getCoulombsQH()
 {
 	Wire.beginTransmission(MAX1720X_ADDR);
@@ -93,6 +93,65 @@ double max1720x::getCurrent()
     double current = (double)combined*0.0015625/0.01;
     return current;//calculate actual value as 0.0015625 mV/Ohm
 }
+
+// RepCap or reported capacity is a filtered version of the AvCap register that prevents large jumps in the reported value caused by changes in the application such as abrupt changes in temperature or load current. 
+double max1720x::getCapacity()
+{
+	Wire.beginTransmission(MAX1720X_ADDR);
+	Wire.write(MAX1720X_REPCAP_ADDR);
+	Wire.endTransmission(false);
+	Wire.requestFrom(MAX1720X_ADDR, (int)2);
+    uint16_t combined = Wire.read()|(Wire.read()<<8); // LSB or-ed with MSB
+	double capacity = (double)combined*0.005/0.01;
+    return capacity;//calculate actual value as 0.005 mVh/Ohm
+}
+
+// The TTE register holds the estimated time to empty for the application under present temperature and load conditions 
+double max1720x::getTTE()
+{
+	Wire.beginTransmission(MAX1720X_ADDR);
+	Wire.write(MAX1720X_TTE_ADDR);
+	Wire.endTransmission(false);
+	Wire.requestFrom(MAX1720X_ADDR, (int)2);
+    uint16_t combined = Wire.read()|(Wire.read()<<8); // LSB or-ed with MSB
+	double capacity = (double)combined*5.625;
+    return capacity;//calculate actual value as value*5.625s
+}
+
+// The TTF register holds the estimated time to full for the application under present conditions. 
+double max1720x::getTTF()
+{
+	Wire.beginTransmission(MAX1720X_ADDR);
+	Wire.write(MAX1720X_TTF_ADDR);
+	Wire.endTransmission(false);
+	Wire.requestFrom(MAX1720X_ADDR, (int)2);
+    uint16_t combined = Wire.read()|(Wire.read()<<8); // LSB or-ed with MSB
+	double capacity = (double)combined*5.625;
+    return capacity;//calculate actual value as value*5.625s
+}
+
+// Status Register (000h) The Status register maintains all flags related to alert thresholds and battery insertion or removal.
+uint16_t max1720x::getStatus()
+{
+	Wire.beginTransmission(MAX1720X_ADDR);
+	Wire.write(MAX1720X_STATUS_ADDR);
+	Wire.endTransmission(false);
+	Wire.requestFrom(MAX1720X_ADDR, (int)2);
+    uint16_t combined = Wire.read()|(Wire.read()<<8); // LSB or-ed with MSB
+	return combined;
+}
+
+// The FULLCAP register holds the battery cell capacity when full. 			--------> To Do
+//  double max1720x::setFULLCAP()
+// {
+// 	Wire.beginTransmission(MAX1720X_ADDR);
+// 	Wire.write(MAX1720X_FULLCAP_ADDR);
+// 	Wire.endTransmission(false);
+// 	Wire.requestFrom(MAX1720X_ADDR, (int)2);
+//     uint16_t combined = Wire.read()|(Wire.read()<<8); // LSB or-ed with MSB
+// 	//double capacity = (double)combined*5.625;
+//     //return capacity;//calculate actual value as value*5.625s
+//}
 
 
 // Reset procedure

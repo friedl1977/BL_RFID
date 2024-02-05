@@ -248,5 +248,4 @@ void Epd::Sleep() {
     SendData(0xA5);     // check code
 }
 
-
 /* END OF FILE */
