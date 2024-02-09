@@ -19,13 +19,20 @@ SYSTEM_MODE(SEMI_AUTOMATIC);
 int new_end_point_STATE = 0;
 int current_end_point_STATE = 0;
 
-unsigned long previousMillis1 = 0;  
-unsigned long currentMillis1 = 0;
-unsigned epaper_update_interval = 180000; //3600000
+//// -- Timers -- ////
+
+unsigned long previous_EPD_Millis = 0;  
+unsigned long current_EPD_Millis = 0;
+unsigned EPD_interval = 1800000; //3600000
+
+unsigned long previous_FG_Millis = 0;   
+unsigned long current_FG_Millis = 0;
+unsigned FG_interval = 1200000; 
 
 unsigned long previous_Publish_Millis = 0;   
 unsigned long current_Publish_Millis = 0;
-unsigned battery_level_interval = 120000; 
+unsigned Publish_interval = 120000; 
+
 
 ////--  RFID Declarations --/////
 
@@ -38,6 +45,8 @@ String Identifier;
 String rfid_uid = "";
 String hhmmss;
 String data_time;
+int RFID_counter = 0;
+char msgRFID[250];
 
 struct myStructure{
 
@@ -55,6 +64,12 @@ String instructorLastName;
 String isHybrid;
 
 }ApiData1, ApiData2;
+
+String GetHourFromString (int position, int length, char *myString) {       //  Extract HOUR:MIN from UTC Time
+    char Hour_min_endpoint[6];
+    strncpy(Hour_min_endpoint,myString+(position-1),length);
+    return (String)Hour_min_endpoint;
+}
 
 #define  BLOCK_SIZE       10     
 #define  PN532_IRQ        2
@@ -110,7 +125,8 @@ void setup() {
   // Serial.println("Waiting for a card......");    // DEBUG -- remove later
   // Initialise RFID --- END
 
-//I2C_Scanner();                                  // RUN I2C DIAGNOSTICS
+//I2C_Scanner();                                    // RUN I2C DIAGNOSTICS
+  End_Point();                                      //Retrieve initial schedule
 
 }
 
@@ -152,7 +168,6 @@ void myHandler(const char *event, const char *data) {
     Serial.print("\n"); 
     Serial.print("\n"); 
     ApiParser_event2();
-    RealTime();
     delay(50);
 
     Handler_STATE = 1;
@@ -182,10 +197,10 @@ void EPD() {
     paint.DrawStringAt(10, 5, "TITLE", &Font24, COLORED);
     paint.DrawStringAt(10, 145, "Start ", &Font20, COLORED);
     paint.DrawStringAt(10, 165, "Time", &Font20, COLORED);
-    paint.DrawStringAt(115, 165, String(ApiData2.startTime), &Font20, COLORED);
+    paint.DrawStringAt(110, 165, String(GetHourFromString(12,5, array[5])), &Font20, COLORED);
     paint.DrawStringAt(205, 145, "End   ", &Font20, COLORED);
     paint.DrawStringAt(205, 165, "Time", &Font20, COLORED);
-    paint.DrawStringAt(310, 165, String(ApiData2.endTime), &Font20, COLORED);
+    paint.DrawStringAt(305, 165, String(GetHourFromString(12,5, array[6])), &Font20, COLORED);
   
     paint.DrawFilledRectangle(10, 35, 100, 120, COLORED);
     paint.DrawFilledRectangle(10, 27, 110, 27, COLORED);
@@ -216,24 +231,25 @@ void EPD() {
     paint.DrawStringAt(15, 240, String(ApiData1.instructorFirstName), &Font20, COLORED);      // instructor Title
     paint.DrawStringAt(15, 260, String(ApiData1.instructorLastName), &Font20, COLORED);       // instructor Title
     
-     epd.SetPartialWindowBlack(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());
+     //epd.SetPartialWindowBlack(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());
 
   //Print RED text
-  paint.Clear(UNCOLORED);
-  paint.SetRotate(2);
+  //paint.Clear(UNCOLORED);
+  //paint.SetRotate(2);
   
-    paint.DrawStringAt(130, 5, "Starship IFT3 - ", &Font24, COLORED);
-    paint.DrawStringAt(130, 35, "What to expect ", &Font24, COLORED);
-    paint.DrawStringAt(130, 65, "from the next ", &Font24, COLORED);
-    paint.DrawStringAt(130, 95, "flight test", &Font24, COLORED);
-    epd.SetPartialWindowRed(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());
+    paint.DrawStringAt(130, 5, "Starship IFT3 - ", &Font24, COLORED);                           //To Do
+    paint.DrawStringAt(130, 35, "What to expect ", &Font24, COLORED);                           //To Do
+    paint.DrawStringAt(130, 65, "from the next ", &Font24, COLORED);                            //To Do
+    paint.DrawStringAt(130, 95, "flight test", &Font24, COLORED);                               //To Do
+    epd.SetPartialWindowBlack(paint.GetImage(), 0, 0, paint.GetWidth(), paint.GetHeight());       //To Do
 
-  epd.DisplayFrame();         // /* This displays the data from the SRAM in e-Paper module */
+  epd.DisplayFrame();                               /* Displays the data from the SRAM in e-Paper module */
   delay(50);
-  //epd.ClearFrame(); 
+  epd.ClearFrame(); 
   
-  epd.Sleep();                /* Deep sleep */
+  epd.Sleep();                                      /* Deep sleep */
   new_end_point_STATE = 0;
+  previous_EPD_Millis = current_EPD_Millis;         //Reset Timer
 
   /* This displays an image */
   //epd.DisplayFrame(IMAGE_BLACK, IMAGE_RED);
@@ -313,7 +329,7 @@ void RealTime(void){
             data_time = year + "-" + month + "-" + day + "T" + hhmmss;
  }
 
-void ApiParser_event1(void){                  //store all sperate data from API into the struct variable
+void ApiParser_event1(void){                    //store all sperate data from API into the struct variable
 
 //ApiData.id = array[0];
   ApiData1.readerMode = array[1];
@@ -330,7 +346,7 @@ void ApiParser_event1(void){                  //store all sperate data from API 
 
 }
 
-void ApiParser_event2(void){                  //store all sperate data from API into the struct variable
+void ApiParser_event2(void){                    //store all sperate data from API into the struct variable
 
     //ApiData.id = array[0];
     ApiData2.readerMode = array[10];
@@ -351,30 +367,35 @@ void RFID () {
 
 if (nfc.scan()) {
     if (nfc.readData(dataRead, READ_BLOCK_NO) != 1) {
-      // Serial.print("Block ");                            // DIAGNOSTICS
-      // Serial.print(READ_BLOCK_NO);                       // DIAGNOSTICS
       Serial.println("FAILED - PLEASE SCAN AGAIN!");
-    }
-    else {
-      // Serial.print("Block ");                            // DIAGNOSTICS
-      // Serial.print(READ_BLOCK_NO);                       // DIAGNOSTICS
-      Serial.println("ENJOY THE EVENT!");
-      //Particle.publish("Ejoy");
+    
+    } else {
+      
+      String temp_UID;
 
-      //Serial.print("Data read(string):");                 // DIAGNOSTICS
-      //Serial.println((char *)dataRead);                   // DIAGNOSTICS
-      Serial.print("UID: ");
       for (int i = 0; i < BLOCK_SIZE; i++) {
-        Serial.print(dataRead[i], HEX);
-        Serial.print(" ");
-        //Particle.publish("UID: " + String(dataRead[i], HEX), PRIVATE);
-        dataRead[i] = 0;
+        temp_UID += (String(dataRead[i], HEX));          
+        dataRead[i] = 0;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
+        }
 
+        RealTime();
+        Identifier += ((temp_UID) + ",");
+        TimeStamp += (data_time +",");
+      
+        Serial.print(Identifier);             //DEBUG
+        Serial.println();                     //DEBUG
+        Serial.print(TimeStamp);              //DEBUG
+        Serial.println();                     //DEBUG
+        RFID_counter = RFID_counter + 1;     
+      
+        if (RFID_counter == 5) {
+          Serial.println("Publish data on count");             
+          publish_data();
+        } 
       }
-      Serial.println();
     }
-    delay(500);
-  }
+
+    delay(250);
 }
 
 void Fuel_Gauge() {
@@ -384,7 +405,6 @@ void Fuel_Gauge() {
 
     // Construct data package for Paticle.publish // 
     Serial.println("Constructing message...");          //DEBUG
-
         
         snprintf(msgFG, sizeof(msgFG)
             , "%.2f C\n"                                // cell temp in [C]
@@ -406,21 +426,27 @@ void Fuel_Gauge() {
 
 void loop() {
 
-currentMillis1 = millis();
+Particle.syncTime();  
 
-currentMillis1 = millis();
-current_Publish_Millis = millis();
+current_FG_Millis = millis();
+current_EPD_Millis = millis();
+current_Publish_Millis = millis();  
 
-  if ((currentMillis1 - previousMillis1 >= epaper_update_interval) && (new_end_point_STATE == 0)) {
-      previousMillis1 = currentMillis1;
+  if ((current_EPD_Millis - previous_EPD_Millis >= EPD_interval) && (new_end_point_STATE == 0)) {
+      //previousMillis1 = currentMillis1;
       End_Point();
       } 
 
-  if ((current_Publish_Millis - previous_Publish_Millis >= battery_level_interval)) {
-      previous_Publish_Millis = current_Publish_Millis;
-      Fuel_Gauge();
+  if ((current_Publish_Millis - previous_Publish_Millis >= Publish_interval)) {
+      Serial.println("Publish data on time"); 
+      publish_data(); 
+      }   
+
+  //if ((current_Publish_Millis - previous_Publish_Millis >= battery_level_interval)) {
+      //previous_Publish_Millis = current_Publish_Millis;
+      //Fuel_Gauge();
       //Particle.publish("Battery Statistics", msgFG);
-      } 
+      //} 
 
   if (Handler_STATE == 1) {    
       Particle.disconnect();                                                 // Use only in SEMI_AUTOMATIC mode
@@ -438,24 +464,26 @@ current_Publish_Millis = millis();
       }    
 
   RFID();
+  //Fuel_Gauge();
 }
 
+void publish_data(void){                      // this function publish the JSON to particle console
 
-///////////////////////////////
+   if (Particle.connected() == false) {
+      Serial.println("Sending RFID data");
+      digitalWrite(LDO_EN, HIGH);
+      delay(1000);
+      Cellular.on();
+      waitUntil(Cellular.isOn);
+      Particle.connect();
+      waitUntil(Particle.connected);
+   }
 
-//  char string2[] = char(ApiData1.startTime)
-//  void GetHourFromString (int position, int length, char *myString);    
+    Particle.publish("Device data", String::format("{\"Scans\":[{\"EventId\":%d,\"ReaderMode\":\"%s\",\"TimeStamp\":\"%s\",\"Identifier\":\"%s\"},{\"EventId\":%d,\"ReaderMode\":\"%s\",\"TimeStamp\":\"%s\",\"Identifier\":\"%s\"}]}", atoi(ApiData1.id), ApiData1.readerMode.c_str(),TimeStamp.c_str(),Identifier.c_str(),atoi(ApiData2.id), ApiData1.readerMode.c_str(),TimeStamp.c_str(),Identifier.c_str()));
     
-// //int main() {
- 
-// void timeformat() {    
-//   GetHourFromString (12, 5, string2);
-//   //return 0;
-// }
-
-// void GetHourFromString (int position, int length, char *myString) {
-
-//     char Hour_min_endpoint[6];
-//     strncpy(Hour_min_endpoint,myString+(position-1),length);
-//     printf(Hour_min_endpoint);
-// }
+    Serial.println("Clearing String buffer");             //Clear after publish.
+    Identifier = ("");    
+    TimeStamp = ("");
+    RFID_counter = 0;
+    previous_Publish_Millis = current_Publish_Millis;
+}
