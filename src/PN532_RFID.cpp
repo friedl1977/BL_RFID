@@ -117,6 +117,7 @@ int V;
 char data[10] = "data";   //default data
 
 int Handler_STATE = 0;
+int Parser_STATE = 0;
 
 void setup() {
 
@@ -184,14 +185,16 @@ void myHandler(const char *event, const char *data) {
             p = strtok (NULL, "|");
         }
     
-    ApiParser_event1();
-    Serial.print("\n"); 
-    Serial.print("\n"); 
-    ApiParser_event2();
-    delay(50);
-
+    Parser_STATE = 0;
     Handler_STATE = 1;
-    new_end_point_STATE = 2;
+
+    //ApiParser_event1();
+    //Serial.print("\n"); 
+    //Serial.print("\n"); 
+    //ApiParser_event2();
+
+    // Handler_STATE = 1;
+    // new_end_point_STATE = 2;
 }
 
 void EPD() {
@@ -380,6 +383,8 @@ void ApiParser_event2(void){                    //store all sperate data from AP
     ApiData2.instructorFirstName = array[18];
     ApiData2.instructorLastName = array[19];
     ApiData2.isHybrid = array[20];
+
+    new_end_point_STATE = 2;
     
 }
 
@@ -415,7 +420,7 @@ if (nfc.scan()) {
       }
     }
 
-    delay(50);
+    delay(250);
 }
 
 void Fuel_Gauge() {
@@ -468,6 +473,12 @@ current_Publish_Millis = millis();
       //Particle.publish("Battery Statistics", msgFG);
       //} 
 
+  if (Parser_STATE == 0) {
+      ApiParser_event1();
+      delay(50);
+      ApiParser_event2();
+  }
+
   if (Handler_STATE == 1) {    
       Particle.disconnect();                                                 // Use only in SEMI_AUTOMATIC mode
       waitUntil(Particle.disconnected);
@@ -501,7 +512,7 @@ void publish_data(void){                      // this function publish the JSON 
 
     Particle.publish("Device data", String::format("{\"Scans\":[{\"EventId\":%d,\"ReaderMode\":\"%s\",\"TimeStamp\":\"%s\",\"Identifier\":\"%s\"},{\"EventId\":%d,\"ReaderMode\":\"%s\",\"TimeStamp\":\"%s\",\"Identifier\":\"%s\"}]}", atoi(ApiData1.id), ApiData1.readerMode.c_str(),TimeStamp.c_str(),Identifier.c_str(),atoi(ApiData2.id), ApiData1.readerMode.c_str(),TimeStamp.c_str(),Identifier.c_str()));
     
-    Serial.println("Clearing String buffer");             //Clear after publish.
+    Serial.println("Clearing String buffer");             //Clear String after publish.
     Identifier = ("");    
     TimeStamp = ("");
     RFID_counter = 0;
