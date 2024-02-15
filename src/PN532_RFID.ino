@@ -63,7 +63,7 @@ String instructorFirstName;
 String instructorLastName;
 String isHybrid;
 
-}ApiData1, ApiData2;
+} ApiData1, ApiData2;
 
 String GetHourFromString (int position, int length, char *myString) {       //  Extract HOUR:MIN from UTC Time
     char Hour_min_endpoint[6];
@@ -116,8 +116,9 @@ void setup() {
   gauge.reset();                                  // Resets MAX1720x
 
 // Initialise RFID --- START
-  Serial.println();
-  Serial.print("Initializing PN532");
+  //Serial.println();                                 // DEBUG -- remove later
+  //Serial.print("Initializing PN532");               // DEBUG -- remove later
+
   while (!nfc.begin()) {
     Serial.print(".");
     delay (100);
@@ -480,7 +481,7 @@ current_Publish_Millis = millis();
   RFID();
 } 
 
-void publish_data(void){                      // this function publish the JSON to particle console
+void publish_data(void) {                      // this function publish the JSON to particle console
 
    if (Particle.connected() == false) {
       Serial.println("Sending RFID data");
