@@ -168,6 +168,8 @@ void myHandler(const char *event, const char *data) {
     Parser_STATE = 0;
     Handler_STATE = 1;
 
+    // ----------- Moved out of Handler ---------- //
+
     //ApiParser_event1();
     //Serial.print("\n"); 
     //Serial.print("\n"); 
@@ -365,7 +367,7 @@ void ApiParser_event2(void){                    //store all sperate data from AP
     ApiData2.isHybrid = array[20];
 
     new_end_point_STATE = 2;
-    
+    Parser_STATE == 1;
 }
 
 void RFID () {
@@ -472,10 +474,11 @@ current_Publish_Millis = millis();
 
   if (new_end_point_STATE == 2) {
       EPD();
+      Parser_STATE == 0;
       }    
 
   RFID();
-}
+} 
 
 void publish_data(void){                      // this function publish the JSON to particle console
 
